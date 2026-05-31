@@ -58,7 +58,7 @@ export function CandidateLoginForm() {
     const password = String(formData.get("password") || "");
     const result = loginCandidate(email, password);
     if (!result.ok || !result.account) return setError(result.message || "Invalid email or password");
-    router.push("/candidate/dashboard");
+    router.push(result.account.onboardingCompleted ? "/candidate/dashboard" : "/candidate/portfolio");
   }
 
   return (

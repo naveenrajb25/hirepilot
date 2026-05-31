@@ -9,9 +9,9 @@ const links = {
   candidate: [
     ["/candidate/dashboard", "Dashboard"],
     ["/candidate/portfolio", "Portfolio"],
-    ["/candidate/interview", "AI Interview"],
-    ["/candidate/scorecard", "Scorecard"],
     ["/candidate/services", "Services"],
+    ["/candidate/scorecard", "Scorecard"],
+    ["/candidate/reports", "Reports"],
     ["/candidate/profile", "Profile"]
   ],
   recruiter: [

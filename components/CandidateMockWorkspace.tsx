@@ -217,38 +217,57 @@ export function CandidateInterviewWorkspace() {
 export function CandidateScorecardWorkspace() {
   const [base, setBase] = useState(78);
   const [candidate, setCandidate] = useState<CandidateAccount | null>(null);
+  const [requests, setRequests] = useState<CandidateServiceRequest[]>([]);
   useEffect(() => {
-    setCandidate(getCurrentCandidate());
+    const load = () => {
+      setCandidate(getCurrentCandidate());
+      setRequests(getCurrentCandidateServiceRequests());
+    };
+    load();
+    window.addEventListener(SERVICE_REQUESTS_UPDATED_EVENT, load);
+    window.addEventListener("storage", load);
+    return () => {
+      window.removeEventListener(SERVICE_REQUESTS_UPDATED_EVENT, load);
+      window.removeEventListener("storage", load);
+    };
   }, []);
-  const hasScore = typeof candidate?.employabilityScore === "number";
-  const activeBase = candidate?.employabilityScore ?? base;
+  const latestCompleted = requests.find((request) => request.requestStatus === "completed");
+  const atsScore = latestCompleted?.atsScore ?? candidate?.atsScore;
+  const keywordScore = latestCompleted?.keywordScore;
+  const formattingScore = latestCompleted?.formattingScore;
+  const linkedinScore = latestCompleted?.linkedinScore ?? candidate?.linkedinScore;
+  const visibilityScore = latestCompleted?.visibilityScore ?? candidate?.employabilityScore;
+  const overall = latestCompleted?.overallEmployabilityScore ?? candidate?.employabilityScore;
+  const hasScore = typeof overall === "number";
+  const activeBase = overall ?? base;
+  const profileCompletion = candidate ? Math.round(([candidate.fullName, candidate.email, candidate.mobile, candidate.city, candidate.preferredRole, candidate.education, candidate.experienceLevel, candidate.resumeFileName, candidate.linkedin, candidate.skills.length].filter(Boolean).length / 10) * 100) : 0;
   const scorecard = useMemo(() => generateProfessionalScorecard(candidate?.preferredRole || "Candidate", activeBase), [candidate?.preferredRole, activeBase]);
 
   return (
     <div className="grid gap-6">
       <div className="card">
         <h2 className="text-2xl font-black text-navy">Employability Scorecard</h2>
-        <p className="mt-3 text-5xl font-black text-trust">{hasScore ? `${scorecard.overall}/100` : "Not started"}</p>
-        <p className="mt-2 text-slate-600">{hasScore ? (scorecard.overall >= 75 ? "You are recruiter-ready. Your profile can be shown higher in recruiter search." : scorecard.overall >= 50 ? "You are partially recruiter-ready. Improve resume, LinkedIn, and interview score for better visibility." : "Your profile needs improvement before recruiters can take you seriously.") : "Complete your portfolio and interview readiness steps to generate a scorecard."}</p>
-        <div className="mt-5 grid gap-3 md:grid-cols-5">
+        <p className="mt-3 text-5xl font-black text-trust">{hasScore ? `${overall}/100` : "Pending"}</p>
+        <p className="mt-2 text-slate-600">{hasScore ? (scorecard.overall >= 75 ? "Your profile is improving for recruiter visibility." : "Improve resume, LinkedIn, and formatting scores for better visibility.") : "Your resume and LinkedIn scores will appear after analysis or service processing."}</p>
+        <div className="mt-5 grid gap-3 md:grid-cols-4">
           {[
-            `ATS resume ${candidate?.atsScore ?? "Not started"}`,
-            `LinkedIn ${candidate?.linkedinScore ?? "Not started"}`,
-            `Portfolio ${candidate?.onboardingCompleted ? "In progress" : "Not started"}`,
-            `AI interview ${candidate?.aiInterviewScore ?? "Not started"}`,
-            `Visibility ${hasScore ? (scorecard.overall >= 75 ? "High" : "Medium") : "Not started"}`
+            `ATS Resume Score: ${atsScore ?? "Not analyzed"}`,
+            `Keyword Score: ${keywordScore ?? "Not analyzed"}`,
+            `Formatting Score: ${formattingScore ?? "Not analyzed"}`,
+            `LinkedIn Score: ${linkedinScore ?? "Not analyzed"}`,
+            `Profile Completeness: ${profileCompletion}%`,
+            `Recruiter Visibility: ${visibilityScore ?? "Pending"}`,
+            `Overall Employability: ${overall ?? "Pending"}`
           ].map((item) => <div key={item} className="rounded-md bg-skysoft p-3 text-sm font-bold text-navy">{item}</div>)}
         </div>
-        <button className="btn-primary mt-5" type="button" onClick={() => setBase((value) => (value >= 84 ? 76 : value + 4))}>Refresh scorecard</button>
         <div className="mt-5 flex flex-wrap gap-3">
-          <Link href="/candidate/services" className="btn-secondary">Improve My Score</Link>
-          <Link href="/profile/c-101" className="btn-secondary">View Public Profile</Link>
-          <button className="btn-secondary" type="button">Share Profile</button>
+          <Link href="/candidate/services" className="btn-primary">Improve score with HirePilot services</Link>
+          <Link href="/candidate/reports" className="btn-secondary">View reports</Link>
         </div>
       </div>
-      <div className="grid gap-4 md:grid-cols-3">
+      {hasScore && <div className="grid gap-4 md:grid-cols-3">
         {scorecard.roadmap.map((item) => <div className="card text-sm font-semibold text-slate-700" key={item}>{item}</div>)}
-      </div>
+      </div>}
     </div>
   );
 }

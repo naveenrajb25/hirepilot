@@ -7,7 +7,7 @@ import { getCurrentCandidate, type CandidateAccount } from "@/lib/storage/authPr
 import { getCurrentCandidateServiceRequests, SERVICE_REQUESTS_UPDATED_EVENT, type CandidateServiceRequest } from "@/lib/storage/candidateServiceRequestStore";
 
 function scoreLabel(score?: number) {
-  return typeof score === "number" ? score : "Not started";
+  return typeof score === "number" ? score : "Not analyzed";
 }
 
 function visibility(score?: number) {
@@ -128,15 +128,16 @@ export function CandidateDashboardWorkspace() {
             ["LinkedIn added", Boolean(candidate.linkedin)],
             ["Skills added", candidate.skills.length > 0],
             ["Languages added", candidate.languages.length > 0],
-            ["Interview started", typeof candidate.aiInterviewScore === "number"]
+            ["Service requested", requests.length > 0]
           ].map(([step, done]) => (
             <div key={String(step)} className={`rounded-md p-3 text-sm font-bold ${done ? "bg-emerald-50 text-emerald-700" : "bg-skysoft text-navy"}`}>{step}</div>
           ))}
         </div>
         <div className="mt-6 flex flex-wrap gap-3">
           <Link href="/candidate/portfolio" className="btn-primary">Complete profile</Link>
-          <Link href="/candidate/services" className="btn-secondary">Improve My Resume</Link>
-          <Link href="/candidate/services" className="btn-secondary">Optimize My LinkedIn</Link>
+          <Link href="/candidate/services?service=ats-resume" className="btn-secondary">Improve My Resume</Link>
+          <Link href="/candidate/services?service=linkedin" className="btn-secondary">Optimize My LinkedIn</Link>
+          <Link href="/candidate/services" className="btn-secondary">Improve My Visibility</Link>
         </div>
       </div>
 
