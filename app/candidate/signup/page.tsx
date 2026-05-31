@@ -9,7 +9,7 @@ export default function CandidateSignupPage({ searchParams }: { searchParams?: {
       <Header />
       <main className="section">
         <h1 className="text-4xl font-black text-navy">Candidate Signup</h1>
-        <p className="mt-2 text-slate-600">Create an account, verify your email, then complete onboarding.</p>
+        <p className="mt-2 text-slate-600">Create an account and complete your profile to improve recruiter visibility.</p>
         <form action={candidateSignup} className="card mt-6 grid gap-4 md:grid-cols-2">
           <div className="md:col-span-2"><AuthNotice error={searchParams?.error} /></div>
           <div><label>Full name</label><input className="mt-2" name="fullName" required /></div>

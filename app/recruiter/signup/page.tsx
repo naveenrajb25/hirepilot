@@ -9,7 +9,7 @@ export default function RecruiterSignupPage({ searchParams }: { searchParams?: {
       <Header />
       <main className="section">
         <h1 className="text-4xl font-black text-navy">Recruiter Signup</h1>
-        <p className="mt-2 text-slate-600">Register your company profile. After email verification, the account waits for admin approval.</p>
+        <p className="mt-2 text-slate-600">Register your company profile. Recruiter access starts after owner admin approval.</p>
         <form action={recruiterSignup} className="card mt-6 grid gap-4 md:grid-cols-2">
           <div className="md:col-span-2"><AuthNotice error={searchParams?.error} /></div>
           <div><label>Recruiter name</label><input className="mt-2" name="recruiterName" required /></div>

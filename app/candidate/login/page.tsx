@@ -4,8 +4,6 @@ import { AuthNotice } from "@/components/AuthNotice";
 import { candidateLogin } from "@/app/auth-flow-actions";
 
 export default function CandidateLoginPage({ searchParams }: { searchParams?: { error?: string; message?: string } }) {
-  const unverified = searchParams?.error?.includes("not verified");
-
   return (
     <>
       <Header />
@@ -20,7 +18,6 @@ export default function CandidateLoginPage({ searchParams }: { searchParams?: { 
           <div><label htmlFor="candidate-email">Email</label><input id="candidate-email" className="mt-2" name="email" type="email" required /></div>
           <div><label htmlFor="candidate-password">Password</label><input id="candidate-password" className="mt-2" name="password" type="password" required /></div>
           <button className="btn-primary w-full" type="submit">Login</button>
-          {unverified && <Link href="/candidate/verify" className="btn-secondary w-full">Resend verification email/OTP</Link>}
           <Link href="/candidate/signup" className="block text-center text-sm font-bold text-trust">New user? Create account</Link>
         </form>
       </main>

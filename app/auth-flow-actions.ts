@@ -48,25 +48,14 @@ export async function candidateSignup(formData: FormData) {
     fullName,
     email,
     password,
-    emailVerified: false,
-    candidateAccountStatus: "pending_verification",
+    emailVerified: true,
+    candidateAccountStatus: "active",
     onboardingCompleted: false
   };
 
   const cookieStore = await cookies();
   cookieStore.set(candidateCookieName, encodeMockSession(session), cookieOptions);
-  redirect("/candidate/verify?message=Please%20verify%20your%20email%20to%20activate%20your%20account.");
-}
-
-export async function verifyCandidateOtp(formData: FormData) {
-  const otp = required(formData, "otp");
-  const cookieStore = await cookies();
-  const session = decodeMockSession<CandidateMockSession>(cookieStore.get(candidateCookieName)?.value);
-  if (!session) redirect("/candidate/signup?error=Session%20expired.%20Please%20sign%20up%20again.");
-  if (otp !== "123456") fail("/candidate/verify", "OTP invalid.");
-
-  cookieStore.set(candidateCookieName, encodeMockSession({ ...session, emailVerified: true, candidateAccountStatus: "active" }), cookieOptions);
-  redirect("/candidate/onboarding?message=Account%20verified%20successfully.");
+  redirect("/candidate/portfolio?message=Account%20created%20successfully.%20Complete%20your%20profile%20to%20improve%20recruiter%20visibility.");
 }
 
 export async function candidateLogin(formData: FormData) {
@@ -83,7 +72,6 @@ export async function candidateLogin(formData: FormData) {
   const session = decodeMockSession<CandidateMockSession>(cookieStore.get(candidateCookieName)?.value);
 
   if (!session || session.email !== email || session.password !== password) fail("/candidate/login", "Login failed.");
-  if (!session.emailVerified || session.candidateAccountStatus === "pending_verification") fail("/candidate/login", "Your account is not verified. Please verify your email first.");
   if (session.candidateAccountStatus === "suspended") fail("/candidate/login", "Your account is suspended.");
 
   redirect(session.onboardingCompleted ? "/candidate/dashboard" : "/candidate/portfolio");
@@ -120,26 +108,15 @@ export async function recruiterSignup(formData: FormData) {
     recruiterName,
     email,
     password,
-    emailVerified: false,
-    recruiterAccountStatus: "pending_verification",
+    emailVerified: true,
+    recruiterAccountStatus: "pending_admin_approval",
     recruiterStatus: "pending",
     isApproved: false
   };
 
   const cookieStore = await cookies();
   cookieStore.set(recruiterCookieName, encodeMockSession(session), cookieOptions);
-  redirect("/recruiter/verify?message=Please%20verify%20your%20email.%20After%20verification,%20your%20company%20profile%20will%20be%20sent%20for%20admin%20approval.");
-}
-
-export async function verifyRecruiterOtp(formData: FormData) {
-  const otp = required(formData, "otp");
-  const cookieStore = await cookies();
-  const session = decodeMockSession<RecruiterMockSession>(cookieStore.get(recruiterCookieName)?.value);
-  if (!session) redirect("/recruiter/signup?error=Session%20expired.%20Please%20sign%20up%20again.");
-  if (otp !== "123456") fail("/recruiter/verify", "OTP invalid.");
-
-  cookieStore.set(recruiterCookieName, encodeMockSession({ ...session, emailVerified: true, recruiterAccountStatus: "pending_admin_approval" }), cookieOptions);
-  redirect("/recruiter/pending-approval?message=Account%20verified%20successfully.");
+  redirect("/recruiter/pending-approval?message=Account%20created%20successfully.%20Your%20recruiter%20account%20is%20pending%20admin%20approval.");
 }
 
 export async function recruiterLogin(formData: FormData) {
@@ -156,7 +133,6 @@ export async function recruiterLogin(formData: FormData) {
   const session = decodeMockSession<RecruiterMockSession>(cookieStore.get(recruiterCookieName)?.value);
 
   if (!session || session.email !== email || session.password !== password) fail("/recruiter/login", "Login failed.");
-  if (!session.emailVerified || session.recruiterAccountStatus === "pending_verification") fail("/recruiter/login", "Your account is not verified. Please verify your email first.");
   if (session.recruiterAccountStatus === "rejected" || session.recruiterStatus === "rejected") fail("/recruiter/login", "Recruiter rejected.");
   if (!session.isApproved || session.recruiterStatus !== "active") redirect("/recruiter/pending-approval");
 
