@@ -1,9 +1,8 @@
-import Link from "next/link";
 import { Header } from "@/components/Header";
-import { AuthNotice } from "@/components/AuthNotice";
-import { recruiterLogin } from "@/app/auth-flow-actions";
+import { RecruiterLoginForm } from "@/components/RecruiterAuthForms";
+import { Suspense } from "react";
 
-export default function RecruiterLoginPage({ searchParams }: { searchParams?: { error?: string; message?: string } }) {
+export default function RecruiterLoginPage() {
   return (
     <>
       <Header />
@@ -13,13 +12,9 @@ export default function RecruiterLoginPage({ searchParams }: { searchParams?: { 
           <h1 className="mt-4 text-4xl font-black text-navy sm:text-5xl">Access approved recruiter tools.</h1>
           <p className="mt-4 max-w-xl text-lg text-slate-600">Recruiters need admin approval before candidate search and profile access.</p>
         </div>
-        <form action={recruiterLogin} className="card space-y-4">
-          <AuthNotice error={searchParams?.error} message={searchParams?.message} />
-          <div><label>Email</label><input className="mt-2" name="email" type="email" required /></div>
-          <div><label>Password</label><input className="mt-2" name="password" type="password" required /></div>
-          <button className="btn-primary w-full" type="submit">Login</button>
-          <Link href="/recruiter/signup" className="block text-center text-sm font-bold text-trust">New user? Create recruiter account</Link>
-        </form>
+        <Suspense fallback={<div className="card">Loading login form...</div>}>
+          <RecruiterLoginForm />
+        </Suspense>
       </main>
     </>
   );

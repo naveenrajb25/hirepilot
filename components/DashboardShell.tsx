@@ -1,9 +1,9 @@
 import { cookies } from "next/headers";
-import { BriefcaseBusiness, LogOut, UserRound } from "lucide-react";
-import { candidateLogout, recruiterLogout } from "@/app/auth-flow-actions";
+import { BriefcaseBusiness, UserRound } from "lucide-react";
 import { candidateCookieName, decodeMockSession, recruiterCookieName, type CandidateMockSession, type RecruiterMockSession } from "@/lib/mock-auth";
 import { BrandLogo } from "./BrandLogo";
 import { DashboardNavLinks } from "./DashboardNavLinks";
+import { AppLogoutButton } from "./AppLogoutButton";
 
 const links = {
   candidate: [
@@ -34,7 +34,6 @@ export async function DashboardShell({
   const candidate = type === "candidate" ? decodeMockSession<CandidateMockSession>(cookieStore.get(candidateCookieName)?.value) : null;
   const recruiter = type === "recruiter" ? decodeMockSession<RecruiterMockSession>(cookieStore.get(recruiterCookieName)?.value) : null;
   const email = candidate?.email || recruiter?.email || "account@hirepilot.com";
-  const logout = type === "candidate" ? candidateLogout : recruiterLogout;
 
   return (
     <div className="min-h-screen bg-slate-100">
@@ -46,9 +45,7 @@ export async function DashboardShell({
               {type === "candidate" ? <UserRound size={16} /> : <BriefcaseBusiness size={16} />}
               {email}
             </span>
-            <form action={logout}>
-              <button className="btn-secondary py-2" type="submit"><LogOut size={16} /> Logout</button>
-            </form>
+            <AppLogoutButton type={type} />
           </div>
         </div>
       </header>

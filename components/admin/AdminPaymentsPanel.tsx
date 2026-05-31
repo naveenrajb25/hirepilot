@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { PaymentRecord, PaymentStatus } from "@/lib/types";
 import { StatusBadge } from "./AdminControls";
 import { getPayments, savePayments } from "@/lib/storage/adminConfigStore";
+import { updateRequestsForPayment } from "@/lib/storage/candidateServiceRequestStore";
 
 const statuses: PaymentStatus[] = ["pending_verification", "paid", "failed", "refunded"];
 
@@ -18,6 +19,13 @@ export function AdminPaymentsPanel({ initialPayments }: { initialPayments: Payme
   function updatePayment(id: string, status: PaymentStatus) {
     const updated = payments.map((payment) => (payment.id === id ? { ...payment, status } : payment));
     savePayments(updated);
+    const payment = payments.find((item) => item.id === id);
+    if (payment) {
+      updateRequestsForPayment(payment.paymentFor, payment.email, {
+        paymentStatus: status,
+        requestStatus: status === "paid" ? "payment_verified" : status === "failed" ? "payment_pending" : "payment_submitted"
+      });
+    }
     setPayments(getPayments());
     setMessage(status === "paid" ? "Payment marked paid. Access can now be activated for the related service or plan." : "Payment status updated.");
   }

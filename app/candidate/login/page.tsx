@@ -1,9 +1,8 @@
-import Link from "next/link";
 import { Header } from "@/components/Header";
-import { AuthNotice } from "@/components/AuthNotice";
-import { candidateLogin } from "@/app/auth-flow-actions";
+import { CandidateLoginForm } from "@/components/CandidateAuthForms";
+import { Suspense } from "react";
 
-export default function CandidateLoginPage({ searchParams }: { searchParams?: { error?: string; message?: string } }) {
+export default function CandidateLoginPage() {
   return (
     <>
       <Header />
@@ -13,13 +12,9 @@ export default function CandidateLoginPage({ searchParams }: { searchParams?: { 
           <h1 className="mt-4 text-4xl font-black text-navy sm:text-5xl">Access your verified candidate account.</h1>
           <p className="mt-4 max-w-xl text-lg text-slate-600">Access your recruiter-ready profile, ATS score, LinkedIn score, interview readiness, and visibility recommendations.</p>
         </div>
-        <form action={candidateLogin} className="card space-y-4">
-          <AuthNotice error={searchParams?.error} message={searchParams?.message} />
-          <div><label htmlFor="candidate-email">Email</label><input id="candidate-email" className="mt-2" name="email" type="email" required /></div>
-          <div><label htmlFor="candidate-password">Password</label><input id="candidate-password" className="mt-2" name="password" type="password" required /></div>
-          <button className="btn-primary w-full" type="submit">Login</button>
-          <Link href="/candidate/signup" className="block text-center text-sm font-bold text-trust">New user? Create account</Link>
-        </form>
+        <Suspense fallback={<div className="card">Loading login form...</div>}>
+          <CandidateLoginForm />
+        </Suspense>
       </main>
     </>
   );

@@ -3,17 +3,20 @@
 import { useState } from "react";
 import { ExternalLink, X } from "lucide-react";
 import { addPayment } from "@/lib/storage/adminConfigStore";
+import { createCandidateServiceRequest } from "@/lib/storage/candidateServiceRequestStore";
 
 export function PaymentRequestButton({
   label,
   requestType,
   amount,
-  paymentLink
+  paymentLink,
+  requestKind = "general"
 }: {
   label: string;
   requestType: string;
   amount?: string;
   paymentLink?: string;
+  requestKind?: "candidate_service" | "general";
 }) {
   const [open, setOpen] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
@@ -41,8 +44,9 @@ export function PaymentRequestButton({
               event.preventDefault();
               if (hasPaymentLink) {
                 const formData = new FormData(event.currentTarget);
+                const paymentId = `pay-${Date.now()}`;
                 addPayment({
-                  id: `pay-${Date.now()}`,
+                  id: paymentId,
                   payerName: String(formData.get("payerName") || "HirePilot user"),
                   email: String(formData.get("email") || ""),
                   phone: String(formData.get("phone") || ""),
@@ -53,6 +57,15 @@ export function PaymentRequestButton({
                   notes: String(formData.get("notes") || ""),
                   createdAt: new Date().toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })
                 });
+                if (requestKind === "candidate_service") {
+                  createCandidateServiceRequest({
+                    serviceName: requestType,
+                    amount: amount || "",
+                    paymentId,
+                    paymentReference: String(formData.get("referenceId") || ""),
+                    paymentContact: String(formData.get("email") || formData.get("phone") || "")
+                  });
+                }
               }
               setSuccess(true);
             }}

@@ -13,6 +13,14 @@ import {
   updateCandidateService,
   updateRecruiterPlan
 } from "@/lib/storage/adminConfigStore";
+import {
+  getCandidateAdminRows,
+  getRecruiterAdminRows,
+  deleteCandidateAccountFromAdmin,
+  deleteRecruiterAccountFromAdmin,
+  updateCandidateAccountFromAdmin,
+  updateRecruiterAccountFromAdmin
+} from "@/lib/storage/authProfileStore";
 
 type CandidateStatus = NonNullable<Candidate["candidateStatus"]>;
 
@@ -110,6 +118,10 @@ export function CandidatesAdminPanel({ initialCandidates, initialLogs }: { initi
   const [deleteTarget, setDeleteTarget] = useState<Candidate | null>(null);
   const { logs, toast, record } = useAdminFeedback(initialLogs);
 
+  useEffect(() => {
+    setRows(getCandidateAdminRows(initialCandidates));
+  }, [initialCandidates]);
+
   const cities = Array.from(new Set(rows.map((candidate) => candidate.city)));
   const filtered = useMemo(() => {
     const needle = query.toLowerCase();
@@ -127,12 +139,14 @@ export function CandidatesAdminPanel({ initialCandidates, initialLogs }: { initi
   function updateCandidate(id: string, patch: Partial<Candidate>, action: string) {
     const candidate = rows.find((item) => item.id === id);
     setRows((current) => current.map((item) => (item.id === id ? { ...item, ...patch } : item)));
+    updateCandidateAccountFromAdmin(id, patch);
     if (candidate) record(action, "candidate", id, `${candidate.fullName}: ${action}`);
   }
 
   function deleteCandidate() {
     if (!deleteTarget) return;
     setRows((current) => current.filter((candidate) => candidate.id !== deleteTarget.id));
+    deleteCandidateAccountFromAdmin(deleteTarget.id);
     record("candidate deleted", "candidate", deleteTarget.id, `${deleteTarget.fullName} deleted from admin table`);
     setDeleteTarget(null);
   }
@@ -218,6 +232,9 @@ export function RecruitersAdminPanel({ initialRecruiters, initialLogs }: { initi
   const [subscription, setSubscription] = useState("all");
   const [deleteTarget, setDeleteTarget] = useState<RecruiterProfile | null>(null);
   const { logs, toast, record } = useAdminFeedback(initialLogs);
+  useEffect(() => {
+    setRows(getRecruiterAdminRows(initialRecruiters));
+  }, [initialRecruiters]);
   const industries = Array.from(new Set(rows.map((recruiter) => recruiter.industry)));
   const filtered = rows.filter((recruiter) => {
     const needle = query.toLowerCase();
@@ -228,6 +245,7 @@ export function RecruitersAdminPanel({ initialRecruiters, initialLogs }: { initi
   function patchRecruiter(id: string, patch: Partial<RecruiterProfile>, action: string) {
     const recruiter = rows.find((item) => item.id === id);
     setRows((current) => current.map((item) => (item.id === id ? { ...item, ...patch } : item)));
+    updateRecruiterAccountFromAdmin(id, patch);
     if (recruiter) record(action, "recruiter", id, `${recruiter.companyName}: ${action}`);
   }
 
@@ -244,6 +262,7 @@ export function RecruitersAdminPanel({ initialRecruiters, initialLogs }: { initi
   function deleteRecruiter() {
     if (!deleteTarget) return;
     setRows((current) => current.filter((recruiter) => recruiter.id !== deleteTarget.id));
+    deleteRecruiterAccountFromAdmin(deleteTarget.id);
     record("recruiter deleted", "recruiter", deleteTarget.id, `${deleteTarget.companyName} deleted from admin table`);
     setDeleteTarget(null);
   }

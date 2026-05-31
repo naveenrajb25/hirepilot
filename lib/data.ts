@@ -151,8 +151,5 @@ export const generateMockScorecard = generateProfessionalScorecard;
 export const paidServices = [
   "ATS Resume Optimization",
   "LinkedIn Profile Optimization",
-  "AI Interview Readiness",
-  "Portfolio Building",
-  "Job Application Strategy",
-  "Complete Job Visibility Pack"
+  "Career Visibility Pack"
 ];

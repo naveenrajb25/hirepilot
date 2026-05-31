@@ -9,7 +9,8 @@ const candidatePrivateRoutes = [
   "/candidate/profile",
   "/candidate/interview",
   "/candidate/scorecard",
-  "/candidate/services"
+  "/candidate/services",
+  "/candidate/reports"
 ];
 const recruiterPrivatePrefixes = [
   "/recruiter/dashboard",

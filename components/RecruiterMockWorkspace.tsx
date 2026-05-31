@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { Candidate } from "@/lib/types";
 import { RoleCombobox } from "./RoleCombobox";
 import { adminSettings } from "@/lib/admin-data";
+import { getCurrentRecruiter, updateRecruiterProfile } from "@/lib/storage/authProfileStore";
 
 const profileViewUsageKey = "hirepilot.recruiter.profileViewsUsed";
 
@@ -131,14 +132,35 @@ export function RecruiterSearchWorkspace({ candidates }: { candidates: Candidate
 export function CompanyProfileEditor() {
   const [company, setCompany] = useState({
     recruiterName: "Recruiter",
-    companyName: "Hiring Company Pvt Ltd",
-    website: "https://company.example",
-    location: "Mumbai",
-    size: "51-200",
+    companyName: "",
+    companyWebsite: "",
+    companyLocation: "",
+    companySize: "",
     industry: "Technology",
-    roles: "Python Developer, Data Analyst"
+    hiringRoles: "Python Developer, Data Analyst",
+    phone: ""
   });
   const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    const recruiter = getCurrentRecruiter();
+    if (!recruiter) return;
+    setCompany({
+      recruiterName: recruiter.recruiterName,
+      companyName: recruiter.companyName,
+      companyWebsite: recruiter.companyWebsite,
+      companyLocation: recruiter.companyLocation,
+      companySize: recruiter.companySize,
+      industry: recruiter.industry,
+      hiringRoles: recruiter.hiringRoles.join(", "),
+      phone: recruiter.phone
+    });
+  }, []);
+
+  function save() {
+    updateRecruiterProfile(company);
+    setMessage("Company profile saved.");
+  }
 
   return (
     <div className="card">
@@ -152,7 +174,7 @@ export function CompanyProfileEditor() {
           </div>
         ))}
       </div>
-      <button className="btn-primary mt-5" type="button" onClick={() => setMessage("Company profile saved.")}>Save company profile</button>
+      <button className="btn-primary mt-5" type="button" onClick={save}>Save company profile</button>
     </div>
   );
 }

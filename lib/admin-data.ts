@@ -146,10 +146,10 @@ export const candidateServices: CandidateService[] = paidServices.map((service, 
           ? "Complete realistic role-based interview simulations and improve readiness before real interviews."
           : service === "Portfolio Building"
             ? "Add GitHub, projects, case studies, and proof of work to increase recruiter trust."
-            : service === "Complete Job Visibility Pack"
-              ? "Resume, LinkedIn, portfolio, and AI interview improvement support."
+            : service === "Career Visibility Pack"
+              ? "Resume and LinkedIn optimization bundle with visibility improvement report."
               : "Manual expert support for sharper job applications and recruiter visibility.",
-  price: service === "Complete Job Visibility Pack" ? "INR 3,999" : `INR ${799 + index * 300}`,
+  price: service === "Career Visibility Pack" ? "INR 2,999" : `INR ${999 + index * 500}`,
   razorpayPaymentLink: `https://rzp.io/l/hirepilot-service-${index + 1}`,
   isActive: index !== 4,
   createdAt: "2026-05-01",

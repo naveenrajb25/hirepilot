@@ -2,50 +2,109 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { generateProfessionalScorecard } from "@/lib/data";
 import type { CandidateService, PaymentRecord } from "@/lib/types";
 import { RoleCombobox } from "./RoleCombobox";
 import { getInterviewQuestionForRole } from "@/lib/jobRoles";
 import { PaymentRequestButton } from "./BetaRequestModal";
 import { ADMIN_CONFIG_UPDATED_EVENT, getActiveCandidateServices, getPayments } from "@/lib/storage/adminConfigStore";
+import { getCurrentCandidate, updateCandidateProfile, type CandidateAccount } from "@/lib/storage/authProfileStore";
+import { getCurrentCandidateServiceRequests, SERVICE_REQUESTS_UPDATED_EVENT, type CandidateServiceRequest } from "@/lib/storage/candidateServiceRequestStore";
 
-const candidatePortfolio = {
-  fullName: "Candidate Profile",
-  email: "candidate@example.com",
-  phone: "+91 90000 11111",
-  city: "Bengaluru",
-  education: "B.Tech Computer Science",
-  experienceLevel: "Fresher",
-  preferredRole: "Python Developer",
-  linkedin: "https://linkedin.com/in/candidate-profile",
-  github: "https://github.com/candidate-profile",
-  projects: "AI resume parser, Inventory analytics dashboard",
-  skills: "Python, SQL, FastAPI, Communication",
-  languages: "English, Hindi",
-  availability: "Immediate",
-  expectedSalary: "4-6 LPA"
+type PortfolioForm = Pick<CandidateAccount, "fullName" | "email" | "mobile" | "city" | "education" | "experienceLevel" | "preferredRole" | "linkedin" | "github" | "availability" | "expectedSalary" | "resumeFileName" | "originalResumeUrl"> & {
+  projectLinks: string;
+  skills: string;
+  languages: string;
+};
+
+const emptyPortfolio: PortfolioForm = {
+  fullName: "",
+  email: "",
+  mobile: "",
+  city: "",
+  education: "",
+  experienceLevel: "",
+  preferredRole: "",
+  linkedin: "",
+  github: "",
+  projectLinks: "",
+  skills: "",
+  languages: "",
+  availability: "",
+  expectedSalary: "",
+  resumeFileName: "",
+  originalResumeUrl: ""
 };
 
 export function CandidatePortfolioEditor() {
-  const [portfolio, setPortfolio] = useState(candidatePortfolio);
+  const router = useRouter();
+  const [portfolio, setPortfolio] = useState<PortfolioForm>(emptyPortfolio);
   const [saved, setSaved] = useState("");
-  const strengthScore = [portfolio.linkedin, portfolio.skills, portfolio.projects, portfolio.github].filter(Boolean).length;
+  const strengthScore = [portfolio.resumeFileName, portfolio.linkedin, portfolio.skills, portfolio.projectLinks, portfolio.github].filter(Boolean).length;
   const strength = strengthScore >= 4 ? "Strong" : strengthScore >= 2 ? "Average" : "Weak";
 
-  function update(key: keyof typeof candidatePortfolio, value: string) {
+  useEffect(() => {
+    const candidate = getCurrentCandidate();
+    if (!candidate) return;
+    setPortfolio({
+      fullName: candidate.fullName,
+      email: candidate.email,
+      mobile: candidate.mobile,
+      city: candidate.city,
+      education: candidate.education,
+      experienceLevel: candidate.experienceLevel,
+      preferredRole: candidate.preferredRole,
+      linkedin: candidate.linkedin,
+      github: candidate.github,
+      projectLinks: candidate.projectLinks.join(", "),
+      skills: candidate.skills.join(", "),
+      languages: candidate.languages.join(", "),
+      availability: candidate.availability,
+      expectedSalary: candidate.expectedSalary,
+      resumeFileName: candidate.resumeFileName,
+      originalResumeUrl: candidate.originalResumeUrl
+    });
+  }, []);
+
+  function update(key: keyof PortfolioForm, value: string) {
     setPortfolio((current) => ({ ...current, [key]: value }));
+  }
+
+  function save() {
+    updateCandidateProfile({
+      ...portfolio,
+      skills: portfolio.skills,
+      languages: portfolio.languages,
+      projectLinks: portfolio.projectLinks
+    });
+    setSaved("Portfolio completed successfully.");
+    window.setTimeout(() => router.push("/candidate/dashboard?message=Portfolio%20completed%20successfully."), 700);
+  }
+
+  function handleResume(file?: File) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setPortfolio((current) => ({
+        ...current,
+        resumeFileName: file.name,
+        originalResumeUrl: String(reader.result || "")
+      }));
+    };
+    reader.readAsDataURL(file);
   }
 
   return (
     <div className="grid gap-6">
       {saved && <div className="rounded-md bg-emerald-50 p-3 text-sm font-bold text-emerald-700">{saved}</div>}
       <form className="grid gap-4 md:grid-cols-2">
-        {(["fullName", "email", "phone", "city", "education", "experienceLevel", "linkedin", "github"] as const).map((key) => (
-          <div key={key}>
-            <label>{key.replace(/([A-Z])/g, " $1")}</label>
-            <input className="mt-2" value={portfolio[key]} onChange={(event) => update(key, event.target.value)} />
-          </div>
-        ))}
+        <div><label>Full name</label><input className="mt-2" value={portfolio.fullName} onChange={(event) => update("fullName", event.target.value)} /></div>
+        <div><label>Email</label><input className="mt-2 bg-slate-100 text-slate-600" value={portfolio.email} readOnly /></div>
+        <div><label>Mobile number</label><input className="mt-2" value={portfolio.mobile} onChange={(event) => update("mobile", event.target.value)} /></div>
+        <div><label>City</label><input className="mt-2" value={portfolio.city} onChange={(event) => update("city", event.target.value)} /></div>
+        <div><label>Education</label><input className="mt-2" value={portfolio.education} onChange={(event) => update("education", event.target.value)} /></div>
+        <div><label>Experience level</label><input className="mt-2" value={portfolio.experienceLevel} onChange={(event) => update("experienceLevel", event.target.value)} /></div>
         <div>
           <label>Availability</label>
           <input className="mt-2" value={portfolio.availability} onChange={(event) => update("availability", event.target.value)} />
@@ -58,21 +117,30 @@ export function CandidatePortfolioEditor() {
           <RoleCombobox value={portfolio.preferredRole} onChange={(role) => update("preferredRole", role)} />
         </div>
         <div>
-          <label>Resume upload placeholder</label>
-          <input className="mt-2" type="file" />
+          <label>Resume upload</label>
+          <input className="mt-2" type="file" onChange={(event) => handleResume(event.target.files?.[0])} />
+          {portfolio.resumeFileName && <p className="mt-1 text-xs font-bold text-slate-500">Current resume: {portfolio.resumeFileName}</p>}
+        </div>
+        <div>
+          <label>LinkedIn profile</label>
+          <input className="mt-2" value={portfolio.linkedin} onChange={(event) => update("linkedin", event.target.value)} />
+        </div>
+        <div>
+          <label>GitHub link optional</label>
+          <input className="mt-2" value={portfolio.github} onChange={(event) => update("github", event.target.value)} />
         </div>
         <div>
           <label>Project links</label>
           <p className="mt-1 text-xs font-semibold text-slate-500">Optional, but improves recruiter trust and visibility.</p>
-          <textarea className="mt-2" rows={4} value={portfolio.projects} onChange={(event) => update("projects", event.target.value)} />
+          <textarea className="mt-2" rows={4} value={portfolio.projectLinks} onChange={(event) => update("projectLinks", event.target.value)} />
         </div>
         <div>
           <label>Skills editor</label>
           <textarea className="mt-2" rows={4} value={portfolio.skills} onChange={(event) => update("skills", event.target.value)} />
         </div>
         <div className="md:col-span-2 flex flex-wrap gap-3">
-          <button className="btn-primary" type="button" onClick={() => setSaved("Portfolio changes saved.")}>Save portfolio changes</button>
-          <Link href="/profile/c-101" className="btn-secondary">View public profile</Link>
+          <button className="btn-primary" type="button" onClick={save}>Save portfolio changes</button>
+          <Link href="/candidate/profile" className="btn-secondary">View profile</Link>
         </div>
       </form>
       <div className="card bg-skysoft">
@@ -90,6 +158,11 @@ export function CandidateInterviewWorkspace() {
   const [submitted, setSubmitted] = useState<string[]>([]);
   const [message, setMessage] = useState("");
   const selectedMode = interviewModes.find((item) => item.name === mode) ?? interviewModes[1];
+
+  useEffect(() => {
+    const candidate = getCurrentCandidate();
+    if (candidate?.preferredRole) setRole(candidate.preferredRole);
+  }, []);
 
   return (
     <div className="grid gap-6">
@@ -143,16 +216,28 @@ export function CandidateInterviewWorkspace() {
 
 export function CandidateScorecardWorkspace() {
   const [base, setBase] = useState(78);
-  const scorecard = useMemo(() => generateProfessionalScorecard("Python Developer", base), [base]);
+  const [candidate, setCandidate] = useState<CandidateAccount | null>(null);
+  useEffect(() => {
+    setCandidate(getCurrentCandidate());
+  }, []);
+  const hasScore = typeof candidate?.employabilityScore === "number";
+  const activeBase = candidate?.employabilityScore ?? base;
+  const scorecard = useMemo(() => generateProfessionalScorecard(candidate?.preferredRole || "Candidate", activeBase), [candidate?.preferredRole, activeBase]);
 
   return (
     <div className="grid gap-6">
       <div className="card">
         <h2 className="text-2xl font-black text-navy">Employability Scorecard</h2>
-        <p className="mt-3 text-5xl font-black text-trust">{scorecard.overall}/100</p>
-        <p className="mt-2 text-slate-600">{scorecard.overall >= 75 ? "You are recruiter-ready. Your profile can be shown higher in recruiter search." : scorecard.overall >= 50 ? "You are partially recruiter-ready. Improve resume, LinkedIn, and interview score for better visibility." : "Your profile needs improvement before recruiters can take you seriously."}</p>
+        <p className="mt-3 text-5xl font-black text-trust">{hasScore ? `${scorecard.overall}/100` : "Not started"}</p>
+        <p className="mt-2 text-slate-600">{hasScore ? (scorecard.overall >= 75 ? "You are recruiter-ready. Your profile can be shown higher in recruiter search." : scorecard.overall >= 50 ? "You are partially recruiter-ready. Improve resume, LinkedIn, and interview score for better visibility." : "Your profile needs improvement before recruiters can take you seriously.") : "Complete your portfolio and interview readiness steps to generate a scorecard."}</p>
         <div className="mt-5 grid gap-3 md:grid-cols-5">
-          {["ATS resume 82", "LinkedIn 76", "Portfolio 88", "AI interview 86", `Visibility ${scorecard.overall >= 75 ? "High" : "Medium"}`].map((item) => <div key={item} className="rounded-md bg-skysoft p-3 text-sm font-bold text-navy">{item}</div>)}
+          {[
+            `ATS resume ${candidate?.atsScore ?? "Not started"}`,
+            `LinkedIn ${candidate?.linkedinScore ?? "Not started"}`,
+            `Portfolio ${candidate?.onboardingCompleted ? "In progress" : "Not started"}`,
+            `AI interview ${candidate?.aiInterviewScore ?? "Not started"}`,
+            `Visibility ${hasScore ? (scorecard.overall >= 75 ? "High" : "Medium") : "Not started"}`
+          ].map((item) => <div key={item} className="rounded-md bg-skysoft p-3 text-sm font-bold text-navy">{item}</div>)}
         </div>
         <button className="btn-primary mt-5" type="button" onClick={() => setBase((value) => (value >= 84 ? 76 : value + 4))}>Refresh scorecard</button>
         <div className="mt-5 flex flex-wrap gap-3">
@@ -171,38 +256,61 @@ export function CandidateScorecardWorkspace() {
 export function CandidateServiceCards() {
   const [services, setServices] = useState<CandidateService[]>([]);
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
+  const [requests, setRequests] = useState<CandidateServiceRequest[]>([]);
 
   useEffect(() => {
     const load = () => {
       setServices(getActiveCandidateServices());
       setPayments(getPayments());
+      setRequests(getCurrentCandidateServiceRequests());
     };
     load();
     window.addEventListener(ADMIN_CONFIG_UPDATED_EVENT, load);
+    window.addEventListener(SERVICE_REQUESTS_UPDATED_EVENT, load);
     window.addEventListener("storage", load);
     return () => {
       window.removeEventListener(ADMIN_CONFIG_UPDATED_EVENT, load);
+      window.removeEventListener(SERVICE_REQUESTS_UPDATED_EVENT, load);
       window.removeEventListener("storage", load);
     };
   }, []);
 
+  const v1Services = services.filter((service) => {
+    const name = service.serviceName.toLowerCase();
+    return name.includes("ats") || name.includes("resume") || name.includes("linkedin") || name.includes("visibility pack") || name.includes("bundle");
+  });
+
   return (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-      {services.map((service) => {
+      {v1Services.map((service) => {
         const isUnlocked = payments.some((payment) => payment.paymentFor === service.serviceName && payment.status === "paid");
+        const request = requests.find((item) => item.serviceName === service.serviceName);
+        const isLinkedIn = service.serviceName.toLowerCase().includes("linkedin");
+        const isBundle = service.serviceName.toLowerCase().includes("pack") || service.serviceName.toLowerCase().includes("bundle");
+        const currentScore = isLinkedIn ? request?.linkedinScore : request?.atsScore;
+        const actionLabel = isBundle ? "Get Career Visibility Pack" : isLinkedIn ? "Optimize My LinkedIn" : "Improve My Resume";
+        const deliverables = isLinkedIn
+          ? ["Optimized headline", "About section", "Skills recommendations", "Recruiter visibility tips", "LinkedIn Report PDF"]
+          : isBundle
+            ? ["Improved ATS Resume DOCX", "Improved ATS Resume PDF", "LinkedIn Optimization Report", "Visibility Improvement Report"]
+            : ["AI-enhanced ATS resume", "Editable DOCX download", "PDF download", "Recruiter-friendly formatting", "Keyword optimization", "ATS Report PDF"];
 
         return (
           <div key={service.id} className="card">
             <h2 className="text-xl font-black text-navy">{service.serviceName}</h2>
             <p className="mt-2 text-sm text-slate-600">{service.description}</p>
             <p className="mt-3 text-2xl font-black text-trust">{service.price}</p>
-            {isUnlocked ? (
-              <ServiceUnlockedFlow serviceName={service.serviceName} />
-            ) : (
-              <p className="mt-4 rounded-md bg-skysoft p-3 text-sm font-semibold text-navy">This service activates after payment verification by the HirePilot admin team.</p>
-            )}
+            <div className="mt-4 grid gap-2 text-sm">
+              <p className="rounded-md bg-skysoft p-3 font-bold text-navy">Current Score: {typeof currentScore === "number" ? `${currentScore}/100` : "Not analyzed"}</p>
+              <p className="rounded-md bg-emerald-50 p-3 font-bold text-emerald-700">Potential Score: {isLinkedIn ? "90+/100" : "85+/100"}</p>
+              {request && <p className="rounded-md bg-slate-100 p-3 font-bold text-slate-700">Service status: {statusLabel(request.requestStatus)}</p>}
+            </div>
+            <ul className="mt-4 space-y-2 text-sm text-slate-600">
+              {deliverables.map((item) => <li key={item} className="rounded-md border border-slate-200 p-2">{item}</li>)}
+            </ul>
+            {isUnlocked && request?.requestStatus === "completed" ? <ServiceUnlockedFlow serviceName={service.serviceName} /> : null}
             <div className="mt-5 flex flex-wrap gap-2">
-              <PaymentRequestButton label="Pay Now" requestType={service.serviceName} amount={service.price} paymentLink={service.paymentLink || service.razorpayPaymentLink} />
+              <PaymentRequestButton label={actionLabel} requestType={service.serviceName} amount={service.price} paymentLink={service.paymentLink || service.razorpayPaymentLink} requestKind="candidate_service" />
               <button className="btn-secondary" type="button">Contact HirePilot Support</button>
             </div>
           </div>
@@ -210,6 +318,17 @@ export function CandidateServiceCards() {
       })}
     </div>
   );
+}
+
+function statusLabel(status: CandidateServiceRequest["requestStatus"]) {
+  const labels = {
+    payment_pending: "Payment Pending",
+    payment_submitted: "Payment Submitted",
+    payment_verified: "Payment Verified",
+    processing: "Processing",
+    completed: "Completed"
+  };
+  return labels[status];
 }
 
 const interviewModes = [
